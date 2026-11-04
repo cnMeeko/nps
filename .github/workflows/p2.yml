@@ -1,0 +1,60 @@
+name: Build Install Packages
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux_386,       goos: linux,   goarch: 386 }
+          - { name: linux_amd64,     goos: linux,   goarch: amd64 }
+          - { name: linux_arm64,     goos: linux,   goarch: arm64 }
+          - { name: linux_arm_v5,    goos: linux,   goarch: arm, goarm: '5' }
+          - { name: linux_arm_v6,    goos: linux,   goarch: arm, goarm: '6' }
+          - { name: linux_arm_v7,    goos: linux,   goarch: arm, goarm: '7' }
+          - { name: linux_mips,      goos: linux,   goarch: mips }
+          - { name: linux_mipsle,    goos: linux,   goarch: mipsle }
+          - { name: linux_mips64,    goos: linux,   goarch: mips64 }
+          - { name: linux_mips64le,  goos: linux,   goarch: mips64le }
+          - { name: freebsd_386,     goos: freebsd, goarch: 386 }
+          - { name: freebsd_amd64,   goos: freebsd, goarch: amd64 }
+          - { name: freebsd_arm,     goos: freebsd, goarch: arm, goarm: '7' }
+          - { name: darwin_amd64,    goos: darwin,  goarch: amd64 }
+          - { name: darwin_arm64,    goos: darwin,  goarch: arm64 }
+          - { name: windows_386,     goos: windows, goarch: 386,   ext: '.exe' }
+          - { name: windows_amd64,   goos: windows, goarch: amd64, ext: '.exe' }
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+
+      - name: Build packages
+        run: |
+          bash scripts/build-package.sh "${{ matrix.goos }}" "${{ matrix.goarch }}" "${{ matrix.goarm }}" "${{ matrix.name }}" "${{ matrix.ext }}"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: release/*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
