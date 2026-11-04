@@ -170,6 +170,12 @@ func (s *BaseController) SetType(name string) {
 	s.Data["type"] = name
 }
 
+//当前登录用户是否为管理员
+func (s *BaseController) isAdmin() bool {
+	v, ok := s.Data["isAdmin"].(bool)
+	return ok && v
+}
+
 func (s *BaseController) CheckUserAuth() {
 	if s.controllerName == "client" {
 		if s.actionName == "add" {

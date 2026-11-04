@@ -1,0 +1,79 @@
+<div class="wrapper wrapper-content animated fadeInRight">
+    <div class="row">
+        <div class="col-lg-8 col-lg-offset-2">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5>批量添加隧道</h5>
+                </div>
+                <div class="ibox-content">
+                    <p>支持 TCP 和 UDP 隧道，按 Excel 模板一次添加多条。</p>
+
+                    <ol class="text-muted">
+                        <li>点击“下载 Excel 模板”，保存到本地电脑。</li>
+                        <li>打开模板：在“隧道”工作表从第 2 行开始填写；“填写说明”工作表写明了每列应输入的字符格式，“示例”工作表给出 3 条完整案例。</li>
+                        <li>保存文件后，在下方选择该文件，点击“确认添加”。</li>
+                    </ol>
+
+                    <a class="btn btn-primary" href="{{.web_base_url}}/index/batchtemplate">
+                        <i class="fa fa-download"></i> 下载 Excel 模板
+                    </a>
+
+                    <hr>
+
+                    <form id="batch-add-form">
+                        <div class="form-group">
+                            <label>选择填写好的 Excel 文件</label>
+                            <input type="file" id="batch-add-file" name="file" accept=".xlsx,.xls" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fa fa-upload"></i> 确认添加
+                        </button>
+                        <a class="btn btn-default" href="{{.web_base_url}}/index/tcp">
+                            返回隧道列表
+                        </a>
+                    </form>
+
+                    <div id="batch-add-result" class="m-t" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('#batch-add-form').on('submit', function (e) {
+        e.preventDefault();
+        var input = $('#batch-add-file')[0];
+        if (!input.files || input.files.length == 0) {
+            alert('请先选择填写好的 Excel 文件');
+            return;
+        }
+        var data = new FormData();
+        data.append('file', input.files[0]);
+        var btn = $(this).find('button[type=submit]');
+        btn.prop('disabled', true);
+        var box = $('#batch-add-result');
+        $.ajax({
+            url: '{{.web_base_url}}/index/batchupload',
+            type: 'POST',
+            data: data,
+            processData: false,
+            contentType: false,
+            success: function (res) {
+                box.show().removeClass('alert-success alert-danger');
+                if (res.status === 1) {
+                    box.addClass('alert alert-success').text(res.msg);
+                } else {
+                    box.addClass('alert alert-danger').text(res.msg);
+                }
+                alert(res.msg);
+            },
+            error: function () {
+                alert('上传失败，请稍后重试');
+            },
+            complete: function () {
+                btn.prop('disabled', false);
+            }
+        });
+    });
+</script>

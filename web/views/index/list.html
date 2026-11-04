@@ -20,6 +20,14 @@
                         <div id="toolbar">
                             <a href="{{.web_base_url}}/index/add?type={{.type}}&client_id={{.client_id}}" class="btn btn-primary dim">
                             <i class="fa fa-fw fa-lg fa-plus"></i> <span langtag="word-add"></span></a>
+                            {{if or (eq .type "tcp") (eq .type "udp")}}
+                            <a href="{{.web_base_url}}/index/batchadd" class="btn btn-info dim">
+                            <i class="fa fa-fw fa-lg fa-upload"></i> <span langtag="word-batchadd"></span></a>
+                            <a class="btn btn-warning dim" onclick="openBatchEdit()">
+                            <i class="fa fa-fw fa-lg fa-pencil-square-o"></i> <span langtag="word-batchmodify"></span></a>
+                            <a class="btn btn-danger dim" onclick="batchDelete()">
+                            <i class="fa fa-fw fa-lg fa-trash"></i> <span langtag="word-batchdelete"></span></a>
+                            {{end}}
                         </div>
                         <table id="taskList_table" class="table-striped table-hover" data-mobile-responsive="true"></table>
                     </div>
@@ -92,6 +100,13 @@
         },
         //表格的列
         columns: [
+            {{if or (eq .type "tcp") (eq .type "udp")}}
+            {
+                field: 'state',
+                checkbox: true,
+                halign: 'center'
+            },
+            {{end}}
             {
                 field: 'Id',//域值
                 title: '<span langtag="word-id"></span>',//标题
@@ -210,3 +225,119 @@
         ]
     });
 </script>
+
+{{if or (eq .type "tcp") (eq .type "udp")}}
+<style>
+    @media (max-width: 767px) {
+        #batchEditModal .modal-dialog {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #batchEditModal .modal-content {
+            height: 100%;
+            border-radius: 0;
+        }
+
+        #batchEditModal .modal-body {
+            overflow-y: auto;
+            max-height: calc(100% - 120px);
+        }
+    }
+</style>
+<div class="modal fade" id="batchEditModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" langtag="word-batchmodify"></h4>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted" langtag="info-batchmodifytip"></p>
+                <div class="form-group">
+                    <label langtag="word-clientid"></label>
+                    <input type="number" class="form-control" id="batch_client_id" placeholder="请输入目标客户端 ID">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitBatchEdit()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function openBatchEdit() {
+        var selections = $('#table').bootstrapTable('getSelections');
+        if (selections.length == 0) {
+            alert('请先勾选要修改的隧道');
+            return;
+        }
+        $('#batch_client_id').val('');
+        $('#batchEditModal').modal('show');
+    }
+
+    function submitBatchEdit() {
+        var selections = $('#table').bootstrapTable('getSelections');
+        if (selections.length == 0) {
+            alert('请先勾选要修改的隧道');
+            return;
+        }
+        var data = {
+            ids: $.map(selections, function (row) {
+                return row.Id;
+            }).join(','),
+            client_id: $.trim($('#batch_client_id').val())
+        };
+        if (!data.client_id || parseInt(data.client_id, 10) <= 0) {
+            alert('请填写要修改的客户端 ID');
+            return;
+        }
+        $.ajax({
+            type: 'POST',
+            url: '{{.web_base_url}}/index/batchedit',
+            data: data,
+            success: function (res) {
+                alert(res.msg);
+                if (res.status) {
+                    $('#batchEditModal').modal('hide');
+                    $('#table').bootstrapTable('refresh');
+                }
+            },
+            error: function () {
+                alert('修改失败，请稍后重试');
+            }
+        });
+    }
+
+    function batchDelete() {
+        var selections = $('#table').bootstrapTable('getSelections');
+        if (selections.length == 0) {
+            alert('请先勾选要删除的隧道');
+            return;
+        }
+        if (!confirm('确定删除选中的 ' + selections.length + ' 条隧道吗？删除后不可恢复。')) {
+            return;
+        }
+        $.ajax({
+            type: 'POST',
+            url: '{{.web_base_url}}/index/batchdel',
+            data: {
+                ids: $.map(selections, function (row) {
+                    return row.Id;
+                }).join(',')
+            },
+            success: function (res) {
+                alert(res.msg);
+                if (res.status) {
+                    $('#table').bootstrapTable('refresh');
+                }
+            },
+            error: function () {
+                alert('删除失败，请稍后重试');
+            }
+        });
+    }
+</script>
+{{end}}

@@ -90,6 +90,12 @@
                     <a href="{{.web_base_url}}/index/file"><i class="fa fa-briefcase fa-lg"></i>
                     <span class="nav-label" langtag="scheme-file"></span></a>
                 </li>
+                {{if eq true .isAdmin}}
+                <li class="{{if eq "backup" .menu}}active{{end}}">
+                    <a href="{{.web_base_url}}/index/backup"><i class="fa fa-database fa-lg"></i>
+                    <span class="nav-label" langtag="word-backup"></span></a>
+                </li>
+                {{end}}
                 <li class="{{if eq "help" .menu}}active{{end}}">
                     <a href="https://ehang.io/nps/documents" target="_blank"><i class="fa fa-lightbulb fa-lg"></i>
                     <span class="nav-label" langtag="word-help"></span></a>

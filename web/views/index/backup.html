@@ -1,0 +1,71 @@
+<div class="wrapper wrapper-content animated fadeInRight">
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5>备份配置文件</h5>
+                </div>
+                <div class="ibox-content">
+                    <p>将当前服务器上所有手动添加的客户端、隧道、代理以及域名配置打包下载到本地电脑，重新安装或更换服务器后可上传恢复，无需重新填写。</p>
+                    <p class="text-muted">备份内容：clients.json（客户端）、tasks.json（隧道/代理）、hosts.json（域名解析）</p>
+                    <a class="btn btn-primary" href="{{.web_base_url}}/index/download">
+                        <i class="fa fa-download"></i> 备份到本地
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5>恢复配置文件</h5>
+                </div>
+                <div class="ibox-content">
+                    <p>选择之前备份的 zip 文件上传，恢复后配置立即生效。</p>
+                    <p class="text-danger">注意：恢复会覆盖当前服务器上的客户端、隧道和域名配置，请提前做好备份。</p>
+                    <form id="restore-form">
+                        <div class="form-group">
+                            <input type="file" id="backup-file" name="file" accept=".zip" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fa fa-upload"></i> 上传并恢复
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('#restore-form').on('submit', function (e) {
+        e.preventDefault();
+        var input = $('#backup-file')[0];
+        if (!input.files || input.files.length == 0) {
+            alert('请先选择备份文件');
+            return;
+        }
+        var data = new FormData();
+        data.append('file', input.files[0]);
+        var btn = $(this).find('button[type=submit]');
+        btn.prop('disabled', true);
+        $.ajax({
+            url: '{{.web_base_url}}/index/restore',
+            type: 'POST',
+            data: data,
+            processData: false,
+            contentType: false,
+            success: function (res) {
+                alert(res.msg);
+                if (res.status === 1) {
+                    window.location.reload();
+                }
+            },
+            error: function () {
+                alert('恢复失败，请稍后重试');
+            },
+            complete: function () {
+                btn.prop('disabled', false);
+            }
+        });
+    });
+</script>

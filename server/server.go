@@ -50,6 +50,48 @@ func InitFromCsv() {
 	})
 }
 
+//reload all clients, tunnels and hosts from config files, and restart the services
+func ReloadAll() {
+	//stop all running tunnel services(except the built-in web server, id is 0)
+	RunList.Range(func(key, value interface{}) bool {
+		if id, ok := key.(int); ok && id == 0 {
+			return true
+		}
+		if svr, ok := value.(proxy.Service); ok {
+			_ = svr.Close()
+		}
+		RunList.Delete(key)
+		return true
+	})
+	//clear the data in memory
+	jsonDb := file.GetDb().JsonDb
+	for _, m := range []*sync.Map{&jsonDb.Clients, &jsonDb.Tasks, &jsonDb.Hosts} {
+		m.Range(func(key, value interface{}) bool {
+			m.Delete(key)
+			return true
+		})
+	}
+	jsonDb.LoadClientFromJsonFile()
+	jsonDb.LoadTaskFromJsonFile()
+	jsonDb.LoadHostFromJsonFile()
+	//add the public password client again
+	if vkey := beego.AppConfig.String("public_vkey"); vkey != "" {
+		c := file.NewClient(vkey, true, true)
+		if err := file.GetDb().NewClient(c); err == nil {
+			RunList.Store(c.Id, nil)
+		}
+	}
+	//restart the tasks which are enabled
+	jsonDb.Tasks.Range(func(key, value interface{}) bool {
+		if t, ok := value.(*file.Tunnel); ok && t.Status {
+			if err := AddTask(t); err != nil {
+				logs.Error("taskId %d restart error %s", t.Id, err)
+			}
+		}
+		return true
+	})
+}
+
 //get bridge command
 func DealBridgeTask() {
 	for {
